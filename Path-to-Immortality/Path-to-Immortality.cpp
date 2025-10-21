@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <vector>
 #include <string>
+#include <algorithm>
 using namespace std;
 
 struct Stage {
@@ -12,6 +13,11 @@ struct Stage {
 struct Level {
     string name;
     vector<Stage> stages;
+};
+
+struct Item {
+    string name;
+    int quantity;
 };
 
 vector<Level> initLevels() {
@@ -26,7 +32,7 @@ vector<Level> initLevels() {
     };
 
     vector<vector<int>> stageExpReq = {
-        {0, 250, 500},
+        {100, 250, 500},
         {1000, 2500, 5000},
         {5000, 12500, 25000},
         {60000, 150000, 300000},
@@ -103,20 +109,22 @@ struct Location {
 vector<Location> initMap() {
     vector<Location> map(5);
 
-    map[0].name = "Лес";
-    map[1].name = "Горная вершина";
-    map[2].name = "Речная долина";
-    map[3].name = "Пустыня";
-    map[4].name = "Древний храм";
+    map[0].name = "Лесная чаща";
+    map[1].name = "Горная пещера";
+    map[2].name = "Хребет дьявола";
+    map[3].name = "Храм хаотичных небес";
+    map[4].name = "Руины храма возвышения";
 
-    map[0].neighbors = { 1, 2 };      // Лес связан с Гора и Долиной
-    map[1].neighbors = { 0, 3 };      // Вершина связана с Лесом и Пустыней
-    map[2].neighbors = { 0, 4 };      // Долина связана с Лесом и Храмом
-    map[3].neighbors = { 1 };         // Пустыня связана только с Вершиной
-    map[4].neighbors = { 2 };         // Храм связан только с Долиной
+    map[0].neighbors = { 1, 2 };
+    map[1].neighbors = { 0, 3 };
+    map[2].neighbors = { 0, 4 };
+    map[3].neighbors = { 1 };
+    map[4].neighbors = { 3 };
 
     return map;
 }
+
+vector<Item> inventory;
 
 void showCurrentLocation(const Location& loc) {
     cout << "Вы находитесь в: " << loc.name << endl;
@@ -149,6 +157,48 @@ int moveToLocation(const vector<Location>& map, int currentIdx) {
     return newIdx;
 }
 
+void showInventory() {
+    cout << "====== Инвентарь ======\n";
+    if (inventory.empty()) {
+        cout << "Инвентарь пуст.\n";
+    }
+    else {
+        for (const auto& item : inventory) {
+            cout << item.name << " x" << item.quantity << "\n";
+        }
+    }
+    cout << "======================\n";
+}
+
+void addItem(const string& itemName, int qty = 1) {
+    auto it = find_if(inventory.begin(), inventory.end(), [&](const Item& item) {
+        return item.name == itemName;
+        });
+    if (it != inventory.end()) {
+        it->quantity += qty;
+    }
+    else {
+        inventory.push_back({ itemName, qty });
+    }
+    cout << "Добавлен предмет: " << itemName << " x" << qty << "\n";
+}
+
+void useItem(const string& itemName, int qty = 1) {
+    auto it = find_if(inventory.begin(), inventory.end(), [&](const Item& item) {
+        return item.name == itemName;
+        });
+    if (it != inventory.end() && it->quantity >= qty) {
+        it->quantity -= qty;
+        cout << "Использован предмет: " << itemName << " x" << qty << "\n";
+        if (it->quantity == 0) {
+            inventory.erase(it);
+        }
+    }
+    else {
+        cout << "Недостаточно предметов или предмет не найден.\n";
+    }
+}
+
 int main() {
     setlocale(LC_ALL, "");
     vector<Level> levels = initLevels();
@@ -156,18 +206,6 @@ int main() {
     int currentLevelIdx = 0;
     int currentStageIdx = 0;
 
-    showProgress(levels, currentLevelIdx, currentStageIdx);
-
-    addExp(levels, currentLevelIdx, currentStageIdx, 120);
-    showProgress(levels, currentLevelIdx, currentStageIdx);
-
-    addExp(levels, currentLevelIdx, currentStageIdx, 100);
-    showProgress(levels, currentLevelIdx, currentStageIdx);
-
-    addExp(levels, currentLevelIdx, currentStageIdx, 500);
-    showProgress(levels, currentLevelIdx, currentStageIdx);
-
-    addExp(levels, currentLevelIdx, currentStageIdx, 500);
     showProgress(levels, currentLevelIdx, currentStageIdx);
 
     vector<Location> map = initMap();
@@ -192,6 +230,8 @@ int main() {
             cout << "Некорректный выбор.\n";
         }
     }
+
+    showInventory();
 
     return 0;
 }
