@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <cstdlib>
+#include <ctime>
 using namespace std;
 
 struct Stage {
@@ -18,6 +20,13 @@ struct Level {
 struct Item {
     string name;
     int quantity;
+};
+
+struct Resource {
+    string name;
+    double chance;
+    int minQuantity;
+    int maxQuantity;
 };
 
 vector<Level> initLevels() {
@@ -104,6 +113,7 @@ void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
 struct Location {
     string name;
     vector<int> neighbors;
+    vector<Resource> resources;
 };
 
 vector<Location> initMap() {
@@ -120,6 +130,32 @@ vector<Location> initMap() {
     map[2].neighbors = { 0, 4 };
     map[3].neighbors = { 1 };
     map[4].neighbors = { 3 };
+
+    map[0].resources = {
+        {"Духовные травы", 0.6, 1, 6},
+        {"Древесный дух", 0.05, 1, 1},
+        {"Живой мох", 0.9, 1, 8}
+    };
+    map[1].resources = {
+        {"Нефрит Ян", 0.1, 1, 2},
+        {"Драконьи кости", 0.3, 1, 3},
+        {"Пламя-сердце", 0.25, 1, 4}
+    };
+    map[2].resources = {
+        {"Тёмные кристаллы", 0.7, 2, 10},
+        {"Дьяволийья Гонг", 0.1, 1, 2},
+        {"Демонические кости", 0.4, 1, 5}
+    };
+    map[3].resources = {
+        {"Облачно-ветреный жемчуг", 0.4, 1, 9},
+        {"Молнии-иглы", 0.2, 6, 20},
+        {"Летучие руны", 0.1, 3, 6}
+    };
+    map[4].resources = {
+        {"Древние духовые камни", 0.85, 10, 30},
+        {"Фрагменты небесных куполов", 0.1, 1, 1},
+        {"Энергетические кристаллы времени", 0.4, 3, 5}
+    };
 
     return map;
 }
@@ -198,6 +234,24 @@ void useItem(const string& itemName, int qty = 1) {
         cout << "Недостаточно предметов или предмет не найден.\n";
     }
 }
+void collectResources(Location& loc) {
+    if (loc.resources.empty()) {
+        cout << "В этой локации нет ресурсов для сбора.\n";
+        return;
+    }
+    for (auto& res : loc.resources) {
+        double roll = (double)rand() / RAND_MAX;
+        if (roll <= res.chance) {
+            int quantity = res.minQuantity + rand() % (res.maxQuantity - res.minQuantity + 1);
+            addItem(res.name, quantity);
+            cout << "Вы успешно собрали " << quantity << " " << res.name << ".\n";
+        }
+        else {
+            cout << "Не удалось собрать " << res.name << ".\n";
+        }
+    }
+    loc.resources.clear();
+}
 
 int main() {
     setlocale(LC_ALL, "");
@@ -216,22 +270,26 @@ int main() {
 
         cout << "Что хотите сделать?\n";
         cout << "1. Переместиться\n";
-        cout << "2. Выйти\n";
+        cout << "2. Добыть ресурсы\n";
+        cout << "3. Посмотреть инвентарь\n";
+        cout << "4. Выйти\n";
+
         int action;
         cin >> action;
-
         if (action == 1) {
             currentLocationIdx = moveToLocation(map, currentLocationIdx);
         }
         else if (action == 2) {
+            collectResources(map[currentLocationIdx]);
+        }
+        else if (action == 3) {
+            showInventory();
+        }
+        else if (action == 4) {
             break;
         }
         else {
             cout << "Некорректный выбор.\n";
         }
     }
-
-    showInventory();
-
-    return 0;
 }
