@@ -15,6 +15,31 @@ struct Player {
     int baseHealth;
     int baseAttack;
 
+    vector<vector<string>> stageNames = {
+        {"Начальный", "Средний", "Поздний"},
+        {"Начальный", "Средний", "Поздний"},
+        {"Начальный", "Средний", "Поздний"},
+        {"Начальный", "Средний", "Поздний"},
+        {"Начальный", "Средний", "Поздний"}
+    };
+
+    vector<vector<int>> stageExpReq = {
+        {100, 250, 500},
+        {1000, 2500, 5000},
+        {5000, 12500, 25000},
+        {60000, 150000, 300000},
+        {500000, 1250000, 2500000}
+
+    };
+
+    vector<string> levelNames = {
+        "Концентрация Ци",
+        "Заложение Основ",
+        "Золотое Ядро",
+        "Зарождающаяся душа",
+        "Обожествление"
+    };
+
     Player() : health(100), maxHealth(100), attack(15), experience(0), level(1), baseHealth(100), baseAttack(15) {}
 };
 
@@ -49,40 +74,15 @@ struct Monster {
     int rewardExp;
 };
 
-vector<Level> initLevels() {
+vector<Level> initLevels(Player player) {
     vector<Level> levels(5);
 
-    vector<vector<string>> stageNames = {
-        {"Начальный", "Средний", "Поздний"},
-        {"Начальный", "Средний", "Поздний"},
-        {"Начальный", "Средний", "Поздний"},
-        {"Начальный", "Средний", "Поздний"},
-        {"Начальный", "Средний", "Поздний"}
-    };
-
-    vector<vector<int>> stageExpReq = {
-        {100, 250, 500},
-        {1000, 2500, 5000},
-        {5000, 12500, 25000},
-        {60000, 150000, 300000},
-        {500000, 1250000, 2500000}
-
-    };
-
-    vector<string> levelNames = {
-        "Концентрация Ци",
-        "Заложение Основ",
-        "Золотое Ядро",
-        "Зарождающаяся душа",
-        "Обожествление"
-    };
-
     for (int i = 0; i < 5; i++) {
-        levels[i].name = levelNames[i];
+        levels[i].name = player.levelNames[i];
         levels[i].stages.resize(3);
         for (int j = 0; j < 3; j++) {
-            levels[i].stages[j].name = stageNames[i][j];
-            levels[i].stages[j].requiredExp = stageExpReq[i][j];
+            levels[i].stages[j].name = player.stageNames[i][j];
+            levels[i].stages[j].requiredExp = player.stageExpReq[i][j];
             levels[i].stages[j].currentExp = 0;
         }
     }
@@ -334,7 +334,8 @@ bool fight(Monster& monster) {
 int main() {
     srand(time(nullptr));
     setlocale(LC_ALL, "");
-    vector<Level> levels = initLevels();
+    Player player;
+    vector<Level> levels = initLevels(player);
 
     int currentLevelIdx = 0;
     int currentStageIdx = 0;
