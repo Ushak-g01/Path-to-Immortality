@@ -6,6 +6,18 @@
 #include <ctime>
 using namespace std;
 
+struct Player {
+    int health;
+    int maxHealth;
+    int attack;
+    int experience;
+    int level;
+    int baseHealth;
+    int baseAttack;
+
+    Player() : health(100), maxHealth(100), attack(15), experience(0), level(1), baseHealth(100), baseAttack(15) {}
+};
+
 struct Stage {
     string name;
     int requiredExp;
@@ -27,6 +39,14 @@ struct Resource {
     double chance;
     int minQuantity;
     int maxQuantity;
+};
+
+struct Monster {
+    string name;
+    int level;
+    int hp;
+    int attack;
+    int rewardExp;
 };
 
 vector<Level> initLevels() {
@@ -69,6 +89,15 @@ vector<Level> initLevels() {
     return levels;
 }
 
+Monster generateMonster(int playerLevel) {
+    int monsterLevel = 1 + rand() % (playerLevel + 1);
+    int hp = 50 + monsterLevel * 20;
+    int attack = 5 + monsterLevel * 3;
+    int rewardExp = 50 + monsterLevel * 30;
+
+    return {"Дух злобы", monsterLevel, hp, attack, rewardExp};
+}
+
 void showProgress(const vector<Level>& levels, int levelIdx, int stageIdx) {
     cout << "======== Прогресс ========\n";
     cout << "Уровень: " << levels[levelIdx].name << "\n";
@@ -77,6 +106,8 @@ void showProgress(const vector<Level>& levels, int levelIdx, int stageIdx) {
         << "/" << levels[levelIdx].stages[stageIdx].requiredExp << ")\n";
     cout << "=========================\n";
 }
+
+bool fight(Monster& monster);
 
 void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
     auto& stage = levels[levelIdx].stages[stageIdx];
@@ -90,6 +121,12 @@ void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
                 stageIdx++;
                 stage = levels[levelIdx].stages[stageIdx];
                 cout << "Вы перешли к этапу: " << stage.name << " уровня " << levels[levelIdx].name << "\n";
+
+                Monster enemy = generateMonster(levelIdx + 1);
+                bool result = fight(enemy);
+                if (!result) {
+                    cout << "Вы потеряли все ресурсы...\n";
+                }
             }
             else {
                 if (levelIdx < static_cast<int>(levels.size()) - 1) {
@@ -97,6 +134,11 @@ void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
                     stageIdx = 0;
                     stage = levels[levelIdx].stages[stageIdx];
                     cout << "Поздравляю! Вы достигли нового уровня: " << levels[levelIdx].name << "\n";
+                    Monster enemy = generateMonster(levelIdx + 1);
+                    bool result = fight(enemy);
+                    if (!result) {
+                        cout << "Вы потеряли все ресурсы...\n";
+                    }
                 }
                 else {
                     cout << "Вы достигли максимального уровня развития!\n";
@@ -255,6 +297,38 @@ void collectResources(Location& loc) {
             cout << "Не удалось собрать " << res.name << ".\n";
         }
     }
+}
+
+void updatePlayerStats(Player& player) {
+    player.maxHealth = player.baseHealth + (player.level - 1) * 20;
+    player.health = player.maxHealth;
+    player.attack = player.baseAttack + (player.level - 1) * 3;
+}
+
+bool fight(Monster& monster) {
+    int playerHp = 100;
+    int playerAttack = 15;
+
+    cout << "Вас встретил " << monster.name << " уровнем " << monster.level << "!\n";
+
+    while (playerHp > 0 && monster.hp > 0) {
+        monster.hp -= playerAttack;
+        cout << "Вы нанесли " << playerAttack << " урона. Остаток здоровья врага: " << max(0, monster.hp) << "\n";
+
+        if (monster.hp <= 0) {
+            cout << "Вы победили врага!\n";
+            return true;
+        }
+
+        playerHp -= monster.attack;
+        cout << "Враг нанес вам " << monster.attack << " урона. Ваше здоровье: " << max(0, playerHp) << "\n";
+
+        if (playerHp <= 0) {
+            cout << "Вы проиграли битву...\n";
+            return false;
+        }
+    }
+    return false;
 }
 
 int main() {
