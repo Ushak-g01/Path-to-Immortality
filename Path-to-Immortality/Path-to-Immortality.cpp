@@ -109,6 +109,11 @@ void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
         }
     }
 }
+void meditate(vector<Level>& levels, int& levelIdx, int& stageIdx) {
+    int experienceGained = 50;
+    cout << "Вы медитируете и получаете " << experienceGained << " опыта.\n";
+    addExp(levels, levelIdx, stageIdx, experienceGained);
+}
 
 struct Location {
     string name;
@@ -153,7 +158,7 @@ vector<Location> initMap() {
     };
     map[4].resources = {
         {"Древние духовые камни", 0.85, 10, 30},
-        {"Фрагменты небесных куполов", 0.1, 1, 1},
+        {"Фрагмент неба", 0.01, 1, 1},
         {"Энергетические кристаллы времени", 0.4, 3, 5}
     };
 
@@ -250,10 +255,10 @@ void collectResources(Location& loc) {
             cout << "Не удалось собрать " << res.name << ".\n";
         }
     }
-    loc.resources.clear();
 }
 
 int main() {
+    srand(time(nullptr));
     setlocale(LC_ALL, "");
     vector<Level> levels = initLevels();
 
@@ -272,7 +277,8 @@ int main() {
         cout << "1. Переместиться\n";
         cout << "2. Добыть ресурсы\n";
         cout << "3. Посмотреть инвентарь\n";
-        cout << "4. Выйти\n";
+        cout << "4. Медитировать\n";
+        cout << "5. Выйти\n";
 
         int action;
         cin >> action;
@@ -286,6 +292,9 @@ int main() {
             showInventory();
         }
         else if (action == 4) {
+            meditate(levels, currentLevelIdx, currentStageIdx);
+        }
+        else if (action == 5) {
             break;
         }
         else {
