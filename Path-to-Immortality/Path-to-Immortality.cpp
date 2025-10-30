@@ -6,6 +6,12 @@
 #include <ctime>
 using namespace std;
 
+struct Player {
+    int health = 100;
+    int damage = 10;
+    double def;
+};
+
 struct Stage {
     string name;
     int requiredExp;
@@ -34,6 +40,7 @@ struct Monster {
     double chance;
     int health;
     int damage;
+    string lootItem;
     double lootChance;
 };
 
@@ -118,7 +125,7 @@ void addExp(vector<Level>& levels, int& levelIdx, int& stageIdx, int exp) {
     }
 }
 void meditate(vector<Level>& levels, int& levelIdx, int& stageIdx) {
-    int experienceGained = 50;
+    int experienceGained = 200;
     cout << "Вы медитируете и получаете " << experienceGained << " опыта.\n";
     addExp(levels, levelIdx, stageIdx, experienceGained);
 }
@@ -171,29 +178,29 @@ vector<Location> initMap() {
         {"Энергетические кристаллы времени", 0.4, 3, 5}
     };
     map[0].monster = {
-        {"Дух дерева", 0.1, 30, 4, 0},
-        {"Водный Тролль", 0.5, 80, 2, 0.2},
-        {"Дриада", 0.05, 60, 8, 0.05}
+        {"Дух дерева", 0.1, 30, 4, "Магическая древесина", 1},
+        {"Водный Тролль", 0.5, 80, 2, "Водная эссенция", 1},
+        {"Дриада", 0.05, 60, 8, "Древняя лоза", 1}
     };
     map[1].monster = {
-        {"Рудный голем", 0.2, 200, 25, 0.4},
-        {"Взбешённый кристалл", 0.3, 80, 50, 0.9},
-        {"Голем хранитель", 0.15, 500, 45, 0.3}
+        {"Рудный голем", 0.2, 200, 25, "Чёрное железо", 1},
+        {"Взбешённый кристалл", 0.3, 80, 50, "Кристальное сердцевина", 1},
+        {"Голем хранитель", 0.15, 500, 45, "Осколки хранителя", 1}
     };
     map[2].monster = {
-        {"Злой шаман", 0.02, 600, 200, 0.2},
-        {"Неупокоенный Дух", 0.75, 80, 250, 0.5},
-        {"Демон ян", 0.6, 650, 500, 0.05}
+        {"Злой шаман", 0.02, 600, 200, "Ритуальная энергия", 1},
+        {"Неупокоенный Дух", 0.75, 80, 250, "Пустой дух", 1},
+        {"Демон ян", 0.6, 650, 500, "Энергия Ян", 1}
     };
     map[3].monster = {
-        {"Небесный страж", 0.2, 8000, 2800, 0.35},
-        {"Марионетка-истязатель", 0.5, 12000, 2300, 0.04},
-        {"Дух небесного инь", 0.01, 6000, 5600, 0.1}
+        {"Небесный страж", 0.2, 8000, 2800, "Осколок небес", 1},
+        {"Марионетка-истязатель", 0.5, 12000, 2300, "Часть марионетки из небесного металла", 1},
+        {"Дух небесного инь", 0.01, 6000, 5600, "Энергия Инь", 1}
     };
     map[4].monster = {
-        {"Испытатель", 0.02, 800000, 60050, 0.2},
-        {"Возвышенный разум", 0.01, 1205000, 20035, 0.35},
-        {"Иномирный голем", 0.01, 2506000, 56000, 0.4}
+        {"Испытатель", 0.02, 800000, 60050, "Гравитационная аномалия", 1},
+        {"Возвышенный разум", 0.01, 1205000, 20035, "Часть возвышенности", 1},
+        {"Иномирный голем", 0.01, 2506000, 56000, "Иномирный осколок", 1}
     };
 
     return map;
@@ -290,53 +297,63 @@ void collectResources(Location& loc) {
         }
     }
 }
-void fightMonster(vector<Level>& levels, int& levelIdx, int& stageIdx, Monster& monster) {
-    int playerHealth = 100;
-    cout << "Вы столкнулись с " << monster.name << "!\n";
 
-    while (playerHealth > 0 && monster.health > 0) {
-        int playerDamage = 20 + rand() % 10;
-        monster.health -= playerDamage;
-        cout << "Вы нанесли " << playerDamage << " урона. Остаток здоровья монстра: " << max(monster.health, 0) << "\n";
+Monster selectMonster(const vector<Monster> monsters) {
+    double randVal = (double)rand() / RAND_MAX;
+    double cumulative = 0.0;
+    for (const auto& m : monsters) {
+        cumulative += m.chance;
+        if (randVal <= cumulative) {
+            return m;
+        }
+    }
+    return monsters[0];
+}
 
-        if (monster.health <= 0) {
-            cout << "Вы победили " << monster.name << "!\n";
-            double rollLoot = (double)rand() / RAND_MAX;
-            if (rollLoot <= monster.lootChance) {
-                cout << "Вы получили награду за победу!\n";
-                addItem("Лут с " + monster.name);
-            }
+void fightMonster(Location& loc, vector <Monster> &monster, Player& player) {
+    Monster encounteredMonster = selectMonster(monster);
+    //Monster monster = encounteredMonster.monster;
+    cout << "Вы столкнулись с " << encounteredMonster.name << "!\n";
+
+    while (player.health > 0 && encounteredMonster.health > 0) {
+        cout << "\nВаши действия:\n";
+        cout << "1. Убежать\n";
+        cout << "2. Атаковать\n";
+        cout << "3. Использовать предмет\n";
+        cout << "Выберите действие (1-3): ";
+        int action;
+        cin >> action;
+
+        if (action == 1) {
+            cout << "Вы решили убежать. Бой прерван.\n";
             break;
         }
+        else if (action == 2) {
+            int playerDamage = rand() % 10 + 1;
+            encounteredMonster.health -= playerDamage;
+            cout << "Вы нанесли " << playerDamage << " урона. Остаток здоровья монстра: " << max(encounteredMonster.health, 0) << "\n";
 
-        int monsterDamage = monster.damage + rand() % 5;
-        playerHealth -= monsterDamage;
-        cout << monster.name << " нанес вам " << monsterDamage << " урона. Ваше здоровье: " << max(playerHealth, 0) << "\n";
+            if (encounteredMonster.health <= 0) {
+                cout << "Вы победили " << encounteredMonster.name << "!\n";
+                double rollLoot = (double)rand() / RAND_MAX;
+                if (rollLoot <= encounteredMonster.lootChance) {
+                    cout << "Вы получили награду за победу!\n";
+                    addItem(encounteredMonster.lootItem);
+                }
+                break;
+            }
 
-        if (playerHealth <= 0) {
+        int monsterDamage = encounteredMonster.damage + rand() % 5 + 1;
+        player.health -= monsterDamage;
+        cout << encounteredMonster.name << " нанес вам " << monsterDamage << " урона. Ваше здоровье: " << max(player.health, 0) << "\n";
+
+        if (player.health <= 0) {
             cout << "Вы проиграли бою...\n";
             break;
+
+        }
         }
     }
-}
-void battleInLocation(vector<Location>& map, int& locationIdx, vector<Level>& levels, int& levelIdx, int& stageIdx) {
-    Location& loc = map[locationIdx];
-    if (loc.monster.empty()) {
-        cout << "Здесь нет монстров.\n";
-        return;
-    }
-    cout << "Доступные монстры:\n";
-    for (int i = 0; i < loc.monster.size(); ++i) {
-        cout << i + 1 << ". " << loc.monster[i].name << "\n";
-    }
-    int choice;
-    cout << "Выберите монстра для боя (номер): ";
-    cin >> choice;
-    if (choice < 1 || choice > loc.monster.size()) {
-        cout << "Некорректный выбор.\n";
-        return;
-    }
-    fightMonster(levels, levelIdx, stageIdx, loc.monster[choice - 1]);
 }
 
 int main() {
@@ -382,7 +399,9 @@ int main() {
             showProgress(levels, currentLevelIdx, currentStageIdx);
         }
         else if (action == 6) {
-            battleInLocation(map, currentLocationIdx, levels, currentLevelIdx, currentStageIdx);
+            Player player;
+            vector<Monster> monsters = map[currentLocationIdx].monster;
+            fightMonster(map[currentLocationIdx], monsters, player);
         }
         else if (action == 7) {
             break;
